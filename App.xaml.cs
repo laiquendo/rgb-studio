@@ -293,6 +293,8 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        // Ikinci kopya yalnizca ilkini one getirip cikti; onun adina "kapandi" yazma.
+        if (Engine == null) { base.OnExit(e); return; }
         SystemEvents.PowerModeChanged -= OnPowerModeChanged;
         _resumeCts?.Cancel();
         try { _tray?.Dispose(); } catch { }
