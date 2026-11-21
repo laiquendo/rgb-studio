@@ -34,5 +34,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
-          $pre = if ($env:GITHUB_REF_NAME -like '*-*') { '--prerelease' } else { '' }
-          gh release create $env:GITHUB_REF_NAME (Get-Item RGBStudio-*.zip).FullName --title "RGB Studio $env:GITHUB_REF_NAME" --generate-notes $pre
+          $extra = @()
+          if ($env:GITHUB_REF_NAME -like '*-*') { $extra += '--prerelease' }
+          gh release create $env:GITHUB_REF_NAME (Get-Item RGBStudio-*.zip).FullName --title "RGB Studio $env:GITHUB_REF_NAME" --generate-notes @extra
