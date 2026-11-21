@@ -1,0 +1,90 @@
+<UserControl x:Class="RgbStudio.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="0,0,8,16">
+            <TextBlock Text="Ayarlar" Style="{StaticResource PageTitle}" />
+
+            <TextBlock Text="Davranış" Style="{StaticResource SectionTitle}" />
+            <ui:CardControl Margin="0,0,0,6" Icon="{ui:SymbolIcon WeatherMoon24}">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Text="Uykudan uyanınca ışıkları geri yükle" FontWeight="SemiBold" />
+                        <TextBlock Style="{StaticResource Caption}" Text="Uyanıştan sonra cihazları yeniden bulur ve etkin senaryoyu birkaç kez tekrar uygular." />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="ResumeSwitch" Click="Toggle_Click" />
+            </ui:CardControl>
+            <ui:CardControl Margin="0,0,0,6" Icon="{ui:SymbolIcon Play24}">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Text="Açılışta son durumu uygula" FontWeight="SemiBold" />
+                        <TextBlock Style="{StaticResource Caption}" Text="Kapalıysa RGB Studio siz bir şey değiştirene kadar ışıklara dokunmaz." />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="StartupApplySwitch" Click="Toggle_Click" />
+            </ui:CardControl>
+            <ui:CardControl Margin="0,0,0,6" Icon="{ui:SymbolIcon Power24}">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Text="Windows açılışında başlat" FontWeight="SemiBold" />
+                        <TextBlock x:Name="AutostartHint" Style="{StaticResource Caption}"
+                                   Text="Oturum açınca izin sormadan, simge alanında başlar (Görev Zamanlayıcı)." />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="AutostartSwitch" Click="Autostart_Click" />
+            </ui:CardControl>
+            <ui:CardControl Margin="0,0,0,6" Icon="{ui:SymbolIcon ArrowMinimize24}">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Text="Kapatınca simge alanına küçült" FontWeight="SemiBold" />
+                        <TextBlock Style="{StaticResource Caption}" Text="Pencereyi kapatmak programı bitirmez; ışık efektleri ve uyku geri yüklemesi çalışmaya devam eder." />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="TraySwitch" Click="Toggle_Click" />
+            </ui:CardControl>
+            <ui:CardControl Margin="0,0,0,18" Icon="{ui:SymbolIcon DarkTheme24}">
+                <ui:CardControl.Header>
+                    <TextBlock Text="Tema" FontWeight="SemiBold" />
+                </ui:CardControl.Header>
+                <ComboBox x:Name="ThemeBox" Width="160" SelectionChanged="ThemeBox_SelectionChanged">
+                    <ComboBoxItem Content="Sistem" />
+                    <ComboBoxItem Content="Koyu" />
+                    <ComboBoxItem Content="Açık" />
+                </ComboBox>
+            </ui:CardControl>
+
+            <TextBlock Text="Donanım katmanları" Style="{StaticResource SectionTitle}" />
+            <ItemsControl x:Name="ProviderList" Margin="0,0,0,8">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <ui:CardControl Margin="0,0,0,6" Icon="{ui:SymbolIcon PlugConnected24}">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Description}" Style="{StaticResource Caption}" />
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <TextBlock Text="{Binding Status}" VerticalAlignment="Center" />
+                        </ui:CardControl>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <ui:CardControl x:Name="MsiSdkCard" Margin="0,0,0,12" Icon="{ui:SymbolIcon ArrowDownload24}" Visibility="Collapsed">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Text="MSI Mystic Light SDK'yı indir" FontWeight="SemiBold" />
+                        <TextBlock x:Name="MsiSdkHint" Style="{StaticResource Caption}" TextWrapping="Wrap"
+                                   Text="Fanlar, şeritler ve soğutucu için gerekir. Dosya MSI'ın kendi sunucusundan (download.msi.com, ~1 MB) indirilir ve MSI imzası doğrulanır. MSI Center da kurulu olmalı." />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:Button x:Name="MsiSdkButton" Content="İndir" Appearance="Primary" Click="MsiSdk_Click" />
+            </ui:CardControl>
+            <StackPanel Orientation="Horizontal">
+                <ui:Button Content="Günlük dosyasını aç" Icon="{ui:SymbolIcon DocumentText24}" Margin="0,0,8,0" Click="OpenLog_Click" />
+                <ui:Button Content="Veri klasörünü aç" Icon="{ui:SymbolIcon Folder24}" Click="OpenData_Click" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

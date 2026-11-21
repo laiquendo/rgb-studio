@@ -1,0 +1,100 @@
+<ui:FluentWindow x:Class="RgbStudio.MainWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 Title="RGB Studio"
+                 Width="1120" Height="740" MinWidth="900" MinHeight="600"
+                 WindowStartupLocation="CenterScreen"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round"
+                 Icon="pack://application:,,,/Assets/app.ico">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Grid.Row="0" Title="RGB Studio">
+            <ui:TitleBar.Icon>
+                <ui:ImageIcon Source="pack://application:,,,/Assets/app.png" />
+            </ui:TitleBar.Icon>
+        </ui:TitleBar>
+
+        <!-- Ust serit: ana acma/kapama + tarama -->
+        <Border Grid.Row="1" Margin="16,4,16,8" Padding="16,12" CornerRadius="8"
+                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <ui:SymbolIcon x:Name="MasterIcon" Symbol="Lightbulb24" FontSize="28" Margin="0,0,12,0" />
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Tüm ışıklar" FontSize="16" FontWeight="SemiBold" />
+                        <TextBlock x:Name="MasterText" Style="{StaticResource Caption}" Text="Açık" />
+                    </StackPanel>
+                    <ui:ToggleSwitch x:Name="MasterSwitch" AutomationProperties.Name="Tüm ışıklar" Margin="20,0,0,0" VerticalAlignment="Center"
+                                     Checked="MasterSwitch_Changed" Unchecked="MasterSwitch_Changed" />
+                </StackPanel>
+                <TextBlock x:Name="SceneText" Grid.Column="1" Margin="24,0" VerticalAlignment="Center"
+                           Style="{StaticResource Caption}" TextTrimming="CharacterEllipsis" />
+                <ui:Button x:Name="ScanButton" Grid.Column="2" Content="Yeniden tara"
+                           Icon="{ui:SymbolIcon ArrowSync24}" Click="Scan_Click" />
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="2" Margin="16,0,16,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Sol menu -->
+            <ListBox x:Name="Nav" Grid.Column="0" Margin="0,0,12,0" SelectionChanged="Nav_SelectionChanged"
+                     Background="Transparent" BorderThickness="0">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                        <Setter Property="Padding" Value="12,10" />
+                        <Setter Property="Margin" Value="0,0,0,4" />
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBoxItem Tag="devices">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="LightbulbFilament24" Margin="0,0,12,0" />
+                        <TextBlock Text="Cihazlar" VerticalAlignment="Center" />
+                    </StackPanel>
+                </ListBoxItem>
+                <ListBoxItem Tag="scenes">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Color24" Margin="0,0,12,0" />
+                        <TextBlock Text="Senaryolar" VerticalAlignment="Center" />
+                    </StackPanel>
+                </ListBoxItem>
+                <ListBoxItem Tag="settings">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Settings24" Margin="0,0,12,0" />
+                        <TextBlock Text="Ayarlar" VerticalAlignment="Center" />
+                    </StackPanel>
+                </ListBoxItem>
+                <ListBoxItem Tag="about">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Info24" Margin="0,0,12,0" />
+                        <TextBlock Text="Hakkında ve Krediler" VerticalAlignment="Center" />
+                    </StackPanel>
+                </ListBoxItem>
+            </ListBox>
+
+            <ContentControl x:Name="Host" Grid.Column="1" />
+        </Grid>
+
+        <!-- Durum satiri -->
+        <TextBlock x:Name="StatusLine" Grid.Row="3" Margin="20,0,20,10" Style="{StaticResource Caption}"
+                   TextTrimming="CharacterEllipsis" />
+    </Grid>
+</ui:FluentWindow>

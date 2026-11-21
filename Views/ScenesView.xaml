@@ -1,0 +1,82 @@
+<UserControl x:Class="RgbStudio.Views.ScenesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="0,0,8,16">
+            <TextBlock Text="Senaryolar" Style="{StaticResource PageTitle}" />
+
+            <!-- Kaydet -->
+            <ui:Card Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="Şu anki ışıkları senaryo olarak kaydet" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Style="{StaticResource Caption}" Margin="0,0,0,10"
+                               Text="Bütün cihazların efekti, LED renkleri, hızı ve parlaklığı tek bir JSON dosyasına kaydedilir. Aynı adla kaydederseniz üzerine yazılır." />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:TextBox x:Name="NameBox" PlaceholderText="Senaryo adı (örn. Oyun, Gece, Film)" KeyDown="NameBox_KeyDown" />
+                        <ui:Button Grid.Column="1" Margin="8,0,0,0" Content="Kaydet" Appearance="Primary"
+                                   Icon="{ui:SymbolIcon Save24}" Click="Save_Click" />
+                    </Grid>
+                    <TextBlock x:Name="SaveResult" Style="{StaticResource Caption}" Margin="0,8,0,0" />
+                </StackPanel>
+            </ui:Card>
+
+            <!-- Hazir senaryolar -->
+            <ui:Card Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="Hızlı başlangıç" Style="{StaticResource SectionTitle}" />
+                    <WrapPanel>
+                        <ui:Button Content="Beyaz" Margin="0,0,8,8" Click="Preset_Click" Tag="white" />
+                        <ui:Button Content="Sıcak beyaz" Margin="0,0,8,8" Click="Preset_Click" Tag="warm" />
+                        <ui:Button Content="Gökkuşağı" Margin="0,0,8,8" Click="Preset_Click" Tag="rainbow" />
+                        <ui:Button Content="Renk döngüsü" Margin="0,0,8,8" Click="Preset_Click" Tag="cycle" />
+                        <ui:Button Content="Mavi nefes" Margin="0,0,8,8" Click="Preset_Click" Tag="breath" />
+                        <ui:Button Content="Mor-turkuaz geçiş" Margin="0,0,8,8" Click="Preset_Click" Tag="gradient" />
+                        <ui:Button Content="Gece (loş kırmızı)" Margin="0,0,8,8" Click="Preset_Click" Tag="night" />
+                        <ui:Button Content="Hepsi kapalı" Margin="0,0,8,8" Click="Preset_Click" Tag="off" />
+                    </WrapPanel>
+                    <TextBlock Style="{StaticResource Caption}" Text="Bunlar bütün cihazlara aynı ayarı uygular; beğendiğinizi düzenleyip kendi adınızla kaydedebilirsiniz." />
+                </StackPanel>
+            </ui:Card>
+
+            <!-- Kayitli senaryolar -->
+            <Grid Margin="0,4,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Kayıtlı senaryolar" Style="{StaticResource SectionTitle}" VerticalAlignment="Center" Margin="0" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <ui:Button Content="İçe aktar…" Icon="{ui:SymbolIcon ArrowImport24}" Margin="0,0,8,0" Click="Import_Click" />
+                    <ui:Button Content="Klasörü aç" Icon="{ui:SymbolIcon Folder24}" Click="OpenFolder_Click" />
+                </StackPanel>
+            </Grid>
+            <TextBlock x:Name="NoScenes" Style="{StaticResource Caption}" Text="Henüz kayıtlı senaryo yok." Visibility="Collapsed" />
+            <ItemsControl x:Name="SceneList">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <ui:CardControl Margin="0,0,0,8" Icon="{ui:SymbolIcon Color24}">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Details}" Style="{StaticResource Caption}" />
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <ui:Button Content="Uygula" Appearance="Primary" Icon="{ui:SymbolIcon Play24}" Margin="0,0,6,0"
+                                           Click="Apply_Click" Tag="{Binding}" />
+                                <ui:Button Icon="{ui:SymbolIcon ArrowExport24}" ToolTip="JSON olarak dışa aktar" AutomationProperties.Name="Dışa aktar" Margin="0,0,6,0"
+                                           Click="Export_Click" Tag="{Binding}" />
+                                <ui:Button Icon="{ui:SymbolIcon Delete24}" ToolTip="Sil" AutomationProperties.Name="Sil" Click="Delete_Click" Tag="{Binding}" />
+                            </StackPanel>
+                        </ui:CardControl>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

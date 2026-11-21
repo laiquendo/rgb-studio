@@ -1,0 +1,177 @@
+<UserControl x:Class="RgbStudio.Views.DevicesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:c="clr-namespace:RgbStudio.Controls">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="310" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Cihaz listesi -->
+        <DockPanel Grid.Column="0" Margin="0,0,12,0">
+            <TextBlock DockPanel.Dock="Top" Text="Bulunan cihazlar" Style="{StaticResource SectionTitle}" />
+            <TextBlock x:Name="EmptyText" DockPanel.Dock="Top" Style="{StaticResource Caption}" Visibility="Collapsed"
+                       Text="Henüz cihaz bulunamadı. OpenRGB ve MSI Center'ın kurulu olduğundan emin olup 'Yeniden tara'ya basın." />
+            <ListBox x:Name="DeviceList" SelectionChanged="DeviceList_SelectionChanged"
+                     Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                        <Setter Property="Padding" Value="10,8" />
+                        <Setter Property="Margin" Value="0,0,0,4" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ui:SymbolIcon Symbol="{Binding Symbol}" FontSize="22" Margin="0,0,12,0" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Caption}" />
+                                <TextBlock Text="{Binding EffectName}" Style="{StaticResource Caption}" />
+                            </StackPanel>
+                            <Border Grid.Column="2" Width="18" Height="18" CornerRadius="9" Margin="8,0,0,0"
+                                    Background="{Binding Preview}" VerticalAlignment="Center"
+                                    BorderThickness="1" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
+
+        <!-- Secili cihazin ayrintisi -->
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="Detail" Margin="0,0,8,16" Visibility="Collapsed">
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock x:Name="DeviceTitle" FontSize="22" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock x:Name="DeviceSub" Style="{StaticResource Caption}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                        <ui:Button Content="Cihazı bul" Icon="{ui:SymbolIcon Eye24}" Margin="0,0,8,0"
+                                   ToolTip="Cihazı 3 saniye beyaz yakıp söndürür; hangisi olduğunu görürsünüz."
+                                   Click="Identify_Click" />
+                        <ui:Button Content="Tüm cihazlara uygula" Icon="{ui:SymbolIcon CopySelect20}"
+                                   ToolTip="Bu cihazın efektini ve renklerini diğer bütün cihazlara kopyalar."
+                                   Click="ApplyAll_Click" />
+                    </StackPanel>
+                </Grid>
+
+                <ui:InfoBar x:Name="NoteBar" Title="Not" IsClosable="False" Severity="Informational" Margin="0,0,0,12" />
+
+                <!-- Efekt -->
+                <ui:Card Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Efekt" Style="{StaticResource SectionTitle}" />
+                        <ComboBox x:Name="EffectBox" Width="260" HorizontalAlignment="Left" SelectionChanged="EffectBox_SelectionChanged" />
+                        <Grid x:Name="SpeedRow" Margin="0,14,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Hız" VerticalAlignment="Center" />
+                            <Slider x:Name="SpeedSlider" Grid.Column="1" Minimum="0.1" Maximum="5" SmallChange="0.1" LargeChange="0.5"
+                                    ValueChanged="SpeedSlider_ValueChanged" VerticalAlignment="Center" />
+                            <TextBlock x:Name="SpeedText" Grid.Column="2" VerticalAlignment="Center" TextAlignment="Right" />
+                        </Grid>
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="56" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Parlaklık" VerticalAlignment="Center" />
+                            <Slider x:Name="BrightnessSlider" Grid.Column="1" Minimum="0" Maximum="100" SmallChange="1" LargeChange="10"
+                                    IsSnapToTickEnabled="True" TickFrequency="1"
+                                    ValueChanged="BrightnessSlider_ValueChanged" VerticalAlignment="Center" />
+                            <TextBlock x:Name="BrightnessText" Grid.Column="2" VerticalAlignment="Center" TextAlignment="Right" />
+                        </Grid>
+                    </StackPanel>
+                </ui:Card>
+
+                <!-- LED'ler -->
+                <ui:Card x:Name="LedCard" Margin="0,0,0,12">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock x:Name="LedTitle" Text="LED'ler" Style="{StaticResource SectionTitle}" Margin="0" />
+                                <TextBlock Style="{StaticResource Caption}"
+                                           Text="Bir LED'e tıklayıp seçin (Ctrl ile çoklu). Seçili LED'ler renk seçiciden boyanır; seçim yoksa hepsi boyanır." />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                                <ui:Button Content="Tümünü seç" Margin="0,0,6,0" Click="SelectAll_Click" />
+                                <ui:Button Content="Seçimi kaldır" Margin="0,0,6,0" Click="SelectNone_Click" />
+                                <ui:Button Content="Seçiliyi bul" Icon="{ui:SymbolIcon Eye24}" Click="IdentifyLed_Click" />
+                            </StackPanel>
+                        </Grid>
+                        <ItemsControl x:Name="LedGrid">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ToggleButton Width="38" Height="38" Margin="0,0,6,6" Padding="0" Cursor="Hand"
+                                                  IsChecked="{Binding IsSelected, Mode=TwoWay}" ToolTip="{Binding Name}" AutomationProperties.Name="{Binding Name}"
+                                                  PreviewMouseLeftButtonDown="Led_PreviewMouseDown" Tag="{Binding}">
+                                        <ToggleButton.Template>
+                                            <ControlTemplate TargetType="ToggleButton">
+                                                <Grid>
+                                                    <Border x:Name="Sel" CornerRadius="8" BorderThickness="2" BorderBrush="Transparent" />
+                                                    <Border Margin="4" CornerRadius="5" Background="{Binding Brush}"
+                                                            BorderThickness="1" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
+                                                        <TextBlock Text="{Binding Label}" FontSize="10" Foreground="{Binding LabelBrush}"
+                                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+                                                    </Border>
+                                                </Grid>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsChecked" Value="True">
+                                                        <Setter TargetName="Sel" Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                                    </Trigger>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Sel" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </ToggleButton.Template>
+                                    </ToggleButton>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ui:Card>
+                <!-- Renk -->
+                <ui:Card x:Name="ColorCard" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Renk" Style="{StaticResource SectionTitle}" />
+                        <StackPanel x:Name="SlotPanel" Orientation="Horizontal" Margin="0,0,0,10">
+                            <RadioButton x:Name="Slot1" Content="1. renk" GroupName="slot" IsChecked="True" Margin="0,0,16,0" Checked="Slot_Checked" />
+                            <RadioButton x:Name="Slot2" Content="2. renk" GroupName="slot" Checked="Slot_Checked" />
+                        </StackPanel>
+                        <c:ColorPicker x:Name="Picker" MaxWidth="460" HorizontalAlignment="Left" Width="460" />
+                        <TextBlock x:Name="ColorHint" Style="{StaticResource Caption}" Margin="0,6,0,0" />
+                    </StackPanel>
+                </ui:Card>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

@@ -1,0 +1,7 @@
+﻿<Project>
+  <!-- Proje cok uzun bir yoldaysa (MAX_PATH) derleme ciktilarini kisa bir yere al; normalde bin/obj proje icinde kalir. -->
+  <PropertyGroup Condition="$(MSBuildProjectDirectory.Length) &gt; 120">
+    <BaseIntermediateOutputPath>$(TEMP)\rgbstudio\obj\</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(TEMP)\rgbstudio\bin\</BaseOutputPath>
+  </PropertyGroup>
+</Project>

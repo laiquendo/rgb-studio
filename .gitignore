@@ -1,0 +1,10 @@
+bin/
+obj/
+publish/
+*.user
+.vs/
+*.suo
+
+# MSI Mystic Light SDK belongs to MSI and is not redistributed; the app downloads it from MSI on request.
+native/
+MysticLight_SDK*.dll
