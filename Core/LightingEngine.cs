@@ -15,7 +15,8 @@ public sealed class LightingEngine : IDisposable
 
     readonly List<ILightingProvider> _providers;
     readonly object _sync = new();
-    readonly Thread _thread;
+    readonly List<Thread> _pumps = new();
+    int _generation;
     readonly CancellationTokenSource _cts = new();
     readonly Stopwatch _clock = Stopwatch.StartNew();
     readonly Dictionary<string, DeviceState> _state = new();
@@ -32,6 +33,9 @@ public sealed class LightingEngine : IDisposable
         public double LastWrite = double.NegativeInfinity;
         public double LastFull = double.NegativeInfinity;
         public int Errors;
+        // Yazma suresi istatistigi (gunluge bir kez yazilir; akicilik sorunlarini teshis icin).
+        public double AvgWriteMs, MaxWriteMs;
+        public long Writes;
     }
 
     sealed record Identify(string DeviceId, int LedIndex, double Until);
@@ -40,8 +44,27 @@ public sealed class LightingEngine : IDisposable
     {
         _providers = providers.ToList();
         foreach (var p in _providers) p.Invalidated += () => DevicesInvalidated?.Invoke();
-        _thread = new Thread(Loop) { IsBackground = true, Name = "RGB render", Priority = ThreadPriority.AboveNormal };
-        _thread.Start();
+    }
+
+    /// <summary>
+    /// Her cihaz icin ayri bir yazma is parcacigi baslat. Cihazlar birbirini beklemez: MSI servisi
+    /// gibi yavas bir cihaz bir kareyi gec yazsa bile RAM, ekran karti ve klavye kendi hizinda akar.
+    /// </summary>
+    void StartPumpsLocked()
+    {
+        int gen = ++_generation;
+        _pumps.RemoveAll(t => !t.IsAlive);
+        foreach (var dev in _devices)
+        {
+            var t = new Thread(() => Pump(dev, gen))
+            {
+                IsBackground = true,
+                Name = "RGB " + dev.Name,
+                Priority = ThreadPriority.AboveNormal,
+            };
+            _pumps.Add(t);
+            t.Start();
+        }
     }
 
     public event Action? DevicesChanged;
@@ -147,6 +170,7 @@ public sealed class LightingEngine : IDisposable
                 _devices = all;
                 _state.Clear();
                 foreach (var d in all) _scene.For(d); // yeni cihazlar icin varsayilan ayar olustur
+                StartPumpsLocked(); // eski cihazlarin is parcaciklari nesil degisince kendiliginden biter
             }
             Log.Info($"Tarama: {all.Count} cihaz — " + string.Join(", ", all.Select(d => $"{d.Name}[{d.LedCount}]")));
         }
@@ -233,42 +257,42 @@ public sealed class LightingEngine : IDisposable
         foreach (var st in _state.Values) st.Last = Array.Empty<Rgb>();
     }
 
-    void Loop()
+    /// <summary>Tek bir cihazin yazma dongusu; cihaz listesi degisince (yeni nesil) ya da kapanista biter.</summary>
+    void Pump(LightDevice dev, int gen)
     {
         var token = _cts.Token;
-        var buffer = new Rgb[64];
+        var buffer = new Rgb[Math.Max(dev.LedCount, 1)];
+        using var timer = new PreciseWait();
         while (!token.IsCancellationRequested)
         {
             double now = _clock.Elapsed.TotalSeconds;
-            List<LightDevice> devices;
             Scene scene;
-            bool masterOff;
+            bool masterOff, skip;
             Identify? identify;
             lock (_sync)
             {
-                if (_paused || (_hold && _identify == null)) { devices = new(); scene = _scene; masterOff = false; identify = null; }
-                else
-                {
-                    devices = _devices;
-                    scene = _scene;
-                    masterOff = _masterOff;
-                    if (_identify != null && now > _identify.Until) { _identify = null; InvalidateAllLocked(); }
-                    identify = _identify;
-                }
+                if (gen != _generation) return;
+                skip = _paused || (_hold && _identify == null);
+                scene = _scene;
+                masterOff = _masterOff;
+                if (_identify != null && now > _identify.Until) { _identify = null; InvalidateAllLocked(); }
+                identify = _identify;
             }
 
-            foreach (var dev in devices)
+            double sleep = 0.05;
+            if (!skip)
             {
-                if (token.IsCancellationRequested) break;
-                try { Tick(dev, scene, masterOff, identify, now, ref buffer); }
-                catch (Exception ex) { Log.Error($"Render hatası: {dev}", ex); }
+                try { sleep = Tick(dev, scene, masterOff, identify, now, ref buffer); }
+                catch (Exception ex) { Log.Error($"Render hatası: {dev}", ex); sleep = 0.5; }
             }
-
-            Thread.Sleep(15);
+            // Bir sonraki kareye kadar bekle; ayar degisikliklerini kacirmamak icin en fazla 50 ms.
+            double ms = Math.Clamp(sleep * 1000, 1, 50);
+            if (timer.Wait(TimeSpan.FromMilliseconds(ms), token.WaitHandle)) return;
         }
     }
 
-    void Tick(LightDevice dev, Scene scene, bool masterOff, Identify? identify, double now, ref Rgb[] buffer)
+    /// <summary>Kareyi hesaplar, gerekiyorsa yazar; bir sonraki denemeye kadar beklenecek sureyi (sn) dondurur.</summary>
+    double Tick(LightDevice dev, Scene scene, bool masterOff, Identify? identify, double now, ref Rgb[] buffer)
     {
         DeviceState st;
         DeviceScene ds;
@@ -306,10 +330,10 @@ public sealed class LightingEngine : IDisposable
         if (!dev.PerLed && n > 1) frame[1..].Fill(frame[0]);
 
         double minInterval = 1.0 / Math.Max(dev.MaxFps, 1);
-        if (now - st.LastWrite < minInterval) return;
+        if (now - st.LastWrite < minInterval) return minInterval - (now - st.LastWrite);
 
-        // Hata veren cihazi yavaslat (saniyede bir dene) — digerlerini bekletmesin.
-        if (st.Errors > 3 && now - st.LastWrite < 1.0) return;
+        // Hata veren cihazi yavaslat (saniyede bir dene).
+        if (st.Errors > 3 && now - st.LastWrite < 1.0) return 1.0 - (now - st.LastWrite);
 
         // Mod/stil yalnizca gerektiginde yeniden ayarlanir (ilk yazim, uyanma, cihaz kontrolu geri aldiginda).
         // Periyodik tazeleme yalnizca renkleri yeniden gonderir: modu her 10 sn'de bir yeniden yazmak
@@ -317,9 +341,10 @@ public sealed class LightingEngine : IDisposable
         bool modeWrite = dev.NeedsFullWrite;
         bool refresh = now - st.LastFull >= KeepAliveSeconds;
         bool changed = st.Last.Length != n || !frame.SequenceEqual(st.Last);
-        if (!changed && !modeWrite && !refresh) return;
+        if (!changed && !modeWrite && !refresh) return minInterval;
 
         st.LastWrite = now;
+        long t0 = Stopwatch.GetTimestamp();
         try
         {
             if (!DryRun) dev.Provider.Write(dev, frame, modeWrite);
@@ -329,19 +354,38 @@ public sealed class LightingEngine : IDisposable
             // Basarisiz yazimi "yazildi" sayma: bir sonraki uygun karede (hata sayisina gore yavaslayarak) tekrar dene.
             if (st.Errors++ == 0) Log.Error($"Yazma hatası: {dev}", ex);
             st.Last = Array.Empty<Rgb>();
-            return;
+            return minInterval;
         }
+        double took = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        RecordWrite(dev, st, took, minInterval);
         if (st.Errors > 0) Log.Info($"Yazma yeniden çalışıyor: {dev}");
         st.Errors = 0;
         st.LastFull = now;
         if (modeWrite) dev.NeedsFullWrite = false;
         st.Last = frame.ToArray();
+        return minInterval - took / 1000.0;
+    }
+
+    static void RecordWrite(LightDevice dev, DeviceState st, double ms, double minInterval)
+    {
+        st.Writes++;
+        st.AvgWriteMs = st.Writes == 1 ? ms : st.AvgWriteMs * 0.95 + ms * 0.05;
+        st.MaxWriteMs = Math.Max(st.MaxWriteMs, ms);
+        if (st.Writes == 150)
+        {
+            double fps = 1000.0 / Math.Max(st.AvgWriteMs, 1000.0 * minInterval);
+            Log.Info($"Yazma süresi: {dev.Name}: ort. {st.AvgWriteMs:0.0} ms, en çok {st.MaxWriteMs:0} ms → ~{fps:0} kare/sn (hedef {dev.MaxFps})");
+        }
     }
 
     public void Dispose()
     {
         _cts.Cancel();
-        _thread.Join(1000);
+        Thread[] pumps;
+        lock (_sync) pumps = _pumps.ToArray();
+        var deadline = Stopwatch.StartNew();
+        foreach (var t in pumps)
+            t.Join(TimeSpan.FromMilliseconds(Math.Max(0, 1000 - deadline.ElapsedMilliseconds)));
         foreach (var p in _providers)
         {
             try { p.Dispose(); } catch { }

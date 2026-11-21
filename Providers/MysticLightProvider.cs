@@ -156,7 +156,9 @@ public sealed class MysticLightProvider : ILightingProvider
                         Handle = new Handle { Type = types[d], Index = i, Styles = styles },
                         PerLed = false,
                         // MSI SDK her cagrida servise gidip geliyor; hizli animasyon kaldirmiyor.
-                        MaxFps = 4,
+                        // MSI SDK her cagrida servise gidip geliyor. Kendi is parcaciginda yazildigi icin
+                        // yavaslarsa yalnizca kendisi kare atlar; gercek hiz gunlukteki "Yazma süresi" satirinda.
+                        MaxFps = 12,
                         Note = all
                             ? "MSI bu anakartta ARGB girişlerini tek bölge olarak veriyor: fanlar, şeritler ve soğutucu birlikte değişir."
                             : null,
