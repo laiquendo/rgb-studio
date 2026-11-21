@@ -13,6 +13,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -49,7 +50,32 @@
             </Grid>
         </Border>
 
-        <Grid Grid.Row="2" Margin="16,0,16,8">
+        <!-- Guncelleme seridi: GitHub'da yeni surum varsa gorunur -->
+        <Border x:Name="UpdateBar" Grid.Row="2" Margin="16,0,16,8" Padding="16,10" CornerRadius="8" Visibility="Collapsed"
+                Background="{DynamicResource SystemFillColorAttentionBackgroundBrush}"
+                BorderBrush="{DynamicResource AccentFillColorDefaultBrush}" BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ui:SymbolIcon Symbol="ArrowCircleUp24" FontSize="22" Margin="0,0,12,0" VerticalAlignment="Center"
+                               Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock x:Name="UpdateTitle" FontWeight="SemiBold" Text="Yeni sürüm var" />
+                    <TextBlock x:Name="UpdateText" Style="{StaticResource Caption}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <ui:Button x:Name="UpdateNotesButton" Content="Neler yeni?" Margin="0,0,8,0" Click="UpdateNotes_Click" />
+                    <ui:Button x:Name="UpdateButton" Content="Güncelle" Appearance="Primary" Margin="0,0,8,0"
+                               Icon="{ui:SymbolIcon ArrowDownload24}" Click="Update_Click" />
+                    <ui:Button x:Name="UpdateLaterButton" Content="Sonra" Appearance="Transparent" Click="UpdateLater_Click" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="3" Margin="16,0,16,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="200" />
                 <ColumnDefinition Width="*" />
@@ -94,7 +120,7 @@
         </Grid>
 
         <!-- Durum satiri -->
-        <TextBlock x:Name="StatusLine" Grid.Row="3" Margin="20,0,20,10" Style="{StaticResource Caption}"
+        <TextBlock x:Name="StatusLine" Grid.Row="4" Margin="20,0,20,10" Style="{StaticResource Caption}"
                    TextTrimming="CharacterEllipsis" />
     </Grid>
 </ui:FluentWindow>

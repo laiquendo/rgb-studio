@@ -27,6 +27,7 @@ public partial class SettingsView : UserControl
         ResumeSwitch.IsChecked = s.ReapplyOnResume;
         StartupApplySwitch.IsChecked = s.ApplyOnStartup;
         TraySwitch.IsChecked = s.MinimizeToTray;
+        UpdateSwitch.IsChecked = s.CheckForUpdates;
         ThemeBox.SelectedIndex = (int)s.Theme;
         try { AutostartSwitch.IsChecked = Startup.IsEnabled(); } catch { AutostartSwitch.IsChecked = false; }
         _loading = false;
@@ -73,6 +74,7 @@ public partial class SettingsView : UserControl
         s.ReapplyOnResume = ResumeSwitch.IsChecked == true;
         s.ApplyOnStartup = StartupApplySwitch.IsChecked == true;
         s.MinimizeToTray = TraySwitch.IsChecked == true;
+        s.CheckForUpdates = UpdateSwitch.IsChecked == true;
         s.Save();
     }
 

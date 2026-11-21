@@ -37,6 +37,13 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // Guncellemeden sonra: eski surec tamamen kapanana kadar bekle (tek kopya kilidini o tutuyor).
+        int ai = Array.IndexOf(e.Args, "--after-update");
+        if (ai >= 0 && ai + 1 < e.Args.Length && int.TryParse(e.Args[ai + 1], out int oldPid))
+        {
+            try { System.Diagnostics.Process.GetProcessById(oldPid).WaitForExit(20000); } catch { /* zaten kapanmis */ }
+        }
+
         // Tek kopya: ikinci acilis mevcut pencereyi one getirir.
         _singleInstance = new Mutex(true, "RgbStudio_SingleInstance", out bool first);
         _showSignal = new EventWaitHandle(false, EventResetMode.AutoReset, "RgbStudio_Show");
@@ -60,6 +67,8 @@ public partial class App : Application
         AppPaths.Ensure();
         Log.Info($"RGB Studio {typeof(App).Assembly.GetName().Version} başladı");
         Settings = AppSettings.Load();
+        Updater.CleanupOldFiles();
+        if (ai >= 0) Log.Info($"Güncelleme tamamlandı: {Updater.Current}");
         if (!e.Args.Contains("--dry-run")) RetireRgbToggle();
 
         Engine = new LightingEngine(new ILightingProvider[]
@@ -89,7 +98,84 @@ public partial class App : Application
         _window = new MainWindow();
         if (!minimized) _window.Show();
 
+        // Ilk denetim acilis yogunlugu gectikten sonra, sonra 12 saatte bir.
+        _updateTimer.Tick += async (_, _) => { _updateTimer.Interval = TimeSpan.FromHours(12); await CheckForUpdateAsync(userAction: false); };
+        _updateTimer.Start();
+
         await ScanAsync(applyOnStartup: true);
+    }
+
+    // ---- Guncelleme ----
+
+    readonly DispatcherTimer _updateTimer = new() { Interval = TimeSpan.FromSeconds(30) };
+    string? _notifiedTag;
+
+    /// <summary>GitHub'da bulunan daha yeni surum (yoksa null).</summary>
+    public UpdateInfo? AvailableUpdate { get; private set; }
+    public event Action? UpdateChanged;
+    public bool IsUpdating { get; private set; }
+
+    /// <summary>Yeni surum var mi bak. Kullanici istediyse sonuc ne olursa olsun mesaj dondurur.</summary>
+    public async Task<string?> CheckForUpdateAsync(bool userAction)
+    {
+        if (!userAction && !Settings.CheckForUpdates) return null;
+        try
+        {
+            AvailableUpdate = await Updater.CheckAsync();
+            UpdateChanged?.Invoke();
+            RebuildTrayMenu();
+            if (AvailableUpdate is { } u)
+            {
+                Log.Info($"Yeni sürüm var: {u.Tag} (kurulu {Updater.Current})");
+                if (_notifiedTag != u.Tag && _window?.IsVisible != true)
+                {
+                    _notifiedTag = u.Tag;
+                    try { _tray?.ShowNotification("RGB Studio güncellemesi", $"{u.Tag} sürümü hazır. Simgeye sağ tıklayıp güncelleyebilirsiniz."); } catch { }
+                }
+                return $"Yeni sürüm var: {u.Tag}";
+            }
+            return $"RGB Studio güncel (sürüm {Updater.Current}).";
+        }
+        catch (Exception ex)
+        {
+            if (userAction) Log.Warn("Güncelleme denetlenemedi: " + ex.Message);
+            return "Güncelleme denetlenemedi: " + ex.Message;
+        }
+    }
+
+    /// <summary>Bulunan surumu indir, dogrula, dosyalari degistir ve yeniden baslat.</summary>
+    public async Task<string?> InstallUpdateAsync(IProgress<double>? progress = null)
+    {
+        if (AvailableUpdate is not { } u || IsUpdating) return null;
+        IsUpdating = true;
+        UpdateChanged?.Invoke();
+        try
+        {
+            Log.Info($"Güncelleme indiriliyor: {u.AssetName}");
+            var staging = await Updater.DownloadAsync(u, progress);
+            await Task.Run(() => Updater.Apply(staging));
+            Log.Info($"Güncelleme dosyaları yerleştirildi ({u.Tag}); yeniden başlatılıyor.");
+            try { Updater.Restart(minimized: _window?.IsVisible != true); }
+            catch (Exception ex)
+            {
+                // Dosyalar yerinde; yalnizca otomatik yeniden acilis olmadi.
+                Log.Error("Yeniden başlatılamadı", ex);
+                AvailableUpdate = null;
+                return $"{u.Tag} kuruldu. Lütfen RGB Studio'yu kapatıp yeniden açın.";
+            }
+            ExitApp();
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Güncelleme kurulamadı", ex);
+            return "Güncelleme kurulamadı: " + ex.Message;
+        }
+        finally
+        {
+            IsUpdating = false;
+            UpdateChanged?.Invoke();
+        }
     }
 
     /// <summary>
@@ -249,6 +335,18 @@ public partial class App : Application
     {
         if (_tray == null) return;
         var menu = new ContextMenu();
+
+        if (AvailableUpdate is { } upd)
+        {
+            var item = new MenuItem { Header = $"Güncelle: {upd.Tag}", FontWeight = FontWeights.SemiBold };
+            item.Click += async (_, _) =>
+            {
+                var err = await InstallUpdateAsync();
+                if (err != null) System.Windows.MessageBox.Show(err, "RGB Studio");
+            };
+            menu.Items.Add(item);
+            menu.Items.Add(new Separator());
+        }
 
         var toggle = new MenuItem { Header = "Işıkları aç / kapat", FontWeight = FontWeights.SemiBold };
         toggle.Click += (_, _) => SetMasterOff(!Settings.MasterOff);

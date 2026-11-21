@@ -18,7 +18,14 @@ jobs:
         with:
           dotnet-version: '9.0.x'
       - name: Publish
-        run: dotnet publish RgbStudio.csproj -c Release -o publish
+        shell: pwsh
+        run: |
+          # Etiketteki surumu exe'ye yaz (v2.1.0 -> 2.1.0); yoksa guncelleme denetimi kendini hep eski sanar.
+          $ver = @()
+          if ($env:GITHUB_REF_TYPE -eq 'tag') { $ver = @("-p:Version=$($env:GITHUB_REF_NAME.TrimStart('v'))") }
+          dotnet publish RgbStudio.csproj -c Release -o publish @ver
+          $built = (Get-Item publish\RgbStudio.exe).VersionInfo.ProductVersion
+          Write-Host "Built version: $built"
       - name: Zip
         shell: pwsh
         run: |

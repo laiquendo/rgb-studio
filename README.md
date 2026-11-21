@@ -38,6 +38,23 @@ OpenRGB'nin desteklediği cihazların listesi: <https://openrgb.org/devices.html
 
 Uygulama yönetici izni ister: RAM ve anakart ışıklarına erişen sürücüler bunu gerektiriyor.
 
+## Güncelleme
+
+RGB Studio açılışta ve 12 saatte bir GitHub'daki son sürüme bakar (Ayarlar'dan kapatılabilir). Yeni sürüm varsa pencerenin üstünde bir şerit, simge alanında da bir bildirim çıkar. **Güncelle**'ye basınca:
+
+1. Sürüm zip'i GitHub'dan indirilir ve SHA-256 özeti GitHub'ın bildirdiği özetle karşılaştırılır,
+2. dosyalar uygulama klasörüne yerleştirilir (bir adım başarısız olursa her şey eski haline döner),
+3. RGB Studio yeniden açılır; ayarlar ve senaryolar korunur.
+
+Ön sürümler (`v2.1.0-beta.1` gibi) otomatik güncellemede önerilmez.
+
+Yeni sürüm yayınlamak (geliştiriciler için): `RgbStudio.csproj`'daki sürüm önemli değildir; `v2.1.0` gibi bir etiket gönderin, GitHub Actions sürümü exe'ye yazıp zip'i Releases'a koyar.
+
+```bash
+git tag v2.1.0
+git push origin v2.1.0
+```
+
 ## Senaryo dosyaları
 
 Senaryolar `%APPDATA%\RgbStudio\Scenes\*.json` içinde durur. Örnek:

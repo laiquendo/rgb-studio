@@ -9,6 +9,12 @@
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock Text="RGB Studio" FontSize="26" FontWeight="SemiBold" />
                     <TextBlock x:Name="VersionText" Style="{StaticResource Caption}" />
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <ui:Button x:Name="CheckUpdateButton" Content="Güncellemeleri denetle" Icon="{ui:SymbolIcon ArrowSync24}"
+                                   Click="CheckUpdate_Click" Margin="0,0,8,0" />
+                        <ui:Button Content="GitHub" Icon="{ui:SymbolIcon Open24}" Click="GitHub_Click" />
+                    </StackPanel>
+                    <TextBlock x:Name="UpdateResult" Style="{StaticResource Caption}" Margin="0,6,0,0" />
                 </StackPanel>
             </StackPanel>
 

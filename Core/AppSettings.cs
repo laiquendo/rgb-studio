@@ -12,6 +12,8 @@ public sealed class AppSettings
     public bool ApplyOnStartup { get; set; } = true;
     public bool MinimizeToTray { get; set; } = true;
     public ThemeChoice Theme { get; set; } = ThemeChoice.System;
+    /// <summary>GitHub'da yeni surum var mi diye acilista ve 12 saatte bir bak.</summary>
+    public bool CheckForUpdates { get; set; } = true;
     public string? LastSceneName { get; set; }
 
     public static AppSettings Load()

@@ -44,6 +44,17 @@ public partial class AboutView : UserControl
         Credits.ItemsSource = All;
     }
 
+    async void CheckUpdate_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        CheckUpdateButton.IsEnabled = false;
+        UpdateResult.Text = "Denetleniyor…";
+        UpdateResult.Text = await App.Current.CheckForUpdateAsync(userAction: true) ?? "";
+        CheckUpdateButton.IsEnabled = true;
+    }
+
+    void GitHub_Click(object sender, System.Windows.RoutedEventArgs e) =>
+        Process.Start(new ProcessStartInfo($"https://github.com/{Core.Updater.Repo}") { UseShellExecute = true });
+
     void Link_RequestNavigate(object sender, RequestNavigateEventArgs e)
     {
         Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
