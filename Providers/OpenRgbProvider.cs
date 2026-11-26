@@ -72,15 +72,22 @@ public sealed class OpenRgbProvider : ILightingProvider
         return candidates.FirstOrDefault(File.Exists);
     }
 
+    /// <summary>
+    /// Sunucu dinliyor mu? Baglanti acmadan, sistemin dinleyen portlar listesine bakar: bos bir baglanti
+    /// acip kapatmak OpenRGB'nin gunlugunu "recv_select failed" hatalariyla doldurup dinleyiciyi yeniden kuruyordu.
+    /// </summary>
     static bool PortOpen()
     {
         try
         {
-            using var c = new TcpClient();
-            return c.ConnectAsync("127.0.0.1", Port).Wait(400) && c.Connected;
+            return System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties()
+                .GetActiveTcpListeners().Any(e => e.Port == Port);
         }
         catch { return false; }
     }
+
+    /// <summary>RGB Studio'nun kendi baslattigi (gorunmez) OpenRGB; kapanista o da kapatilir.</summary>
+    Process? _server;
 
     public async Task<IReadOnlyList<LightDevice>> DetectAsync(CancellationToken ct)
     {
@@ -89,10 +96,14 @@ public sealed class OpenRgbProvider : ILightingProvider
             var exe = FindExe();
             if (exe == null) { Status = "OpenRGB kurulu değil"; return Array.Empty<LightDevice>(); }
             if (!AllowStartServer) { Status = "OpenRGB çalışmıyor (yönetici izni olmadan başlatılmadı)"; return Array.Empty<LightDevice>(); }
-            Log.Info($"OpenRGB sunucusu başlatılıyor: {exe}");
-            Process.Start(new ProcessStartInfo(exe, $"--server --server-port {Port} --startminimized")
+            Log.Info($"OpenRGB sunucusu arka planda başlatılıyor: {exe}");
+            // Yalnizca --server: OpenRGB arayuzsuz (pencere ve simge alani simgesi olmadan) sunucu olarak calisir.
+            // --startminimized arayuzu acar ve simge alanina koyar; kullanici onu kapatinca RAM/ekran karti kontrolu kopuyordu.
+            try { _server?.Dispose(); } catch { }
+            _server = Process.Start(new ProcessStartInfo(exe, $"--server --server-port {Port}")
             {
                 UseShellExecute = false,
+                CreateNoWindow = true,
                 WorkingDirectory = Path.GetDirectoryName(exe)!,
             });
             for (int i = 0; i < 60 && !PortOpen(); i++) await Task.Delay(500, ct);
@@ -204,5 +215,13 @@ public sealed class OpenRgbProvider : ILightingProvider
             try { _client?.Dispose(); } catch { }
             _client = null;
         }
+        // Kendi baslattigimiz arayuzsuz OpenRGB'yi geride birakma (kullanicinin actigi OpenRGB'ye dokunma).
+        try
+        {
+            if (_server is { HasExited: false }) { _server.Kill(); _server.WaitForExit(2000); }
+        }
+        catch { }
+        try { _server?.Dispose(); } catch { }
+        _server = null;
     }
 }
